@@ -19,7 +19,6 @@ package org.lineageos.settings.vibration;
 import android.app.ActionBar;
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.Preference;
 import androidx.preference.ListPreference;
 import androidx.preference.PreferenceCategory;
@@ -28,9 +27,11 @@ import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreference;
 import androidx.preference.TwoStatePreference;
 
+import com.android.settingslib.widget.SettingsBasePreferenceFragment;
+
 import org.lineageos.settings.R;
 
-public class VibratorSettings extends PreferenceFragmentCompat {
+public class VibratorSettings extends SettingsBasePreferenceFragment {
 
     public static final String PREF_VMAX_OVERRIDE_SWITCH = "vmax_override";
     public static final String VMAX_OVERRIDE_PATH = "/sys/module/leds_qpnp_haptics/parameters/vmax_mv_override";
