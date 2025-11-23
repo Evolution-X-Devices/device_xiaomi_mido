@@ -20,16 +20,17 @@ package org.lineageos.settings.torch;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
+
+import com.android.settingslib.widget.SettingsBasePreferenceFragment;
 
 import org.lineageos.settings.preferences.CustomSeekBarPreference;
 import org.lineageos.settings.preferences.FileUtils;
 
 import org.lineageos.settings.R;
 
-public class TorchSettings extends PreferenceFragmentCompat implements
+public class TorchSettings extends SettingsBasePreferenceFragment implements
         Preference.OnPreferenceChangeListener {
 
     public static final String KEY_YELLOW_TORCH_BRIGHTNESS = "yellow_torch_brightness";

@@ -28,14 +28,15 @@ import androidx.fragment.app.DialogFragment;
 import androidx.preference.Preference;
 import androidx.preference.Preference.OnPreferenceChangeListener;
 import androidx.preference.PreferenceCategory;
-import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
+
+import com.android.settingslib.widget.MainSwitchPreference;
+import com.android.settingslib.widget.SettingsBasePreferenceFragment;
 
 import org.lineageos.settings.R;
 
-import com.android.settingslib.widget.MainSwitchPreference;
-
-public class DozeSettingsFragment extends PreferenceFragmentCompat implements OnPreferenceChangeListener {
+public class DozeSettingsFragment extends SettingsBasePreferenceFragment
+        implements OnPreferenceChangeListener {
 
     private SwitchPreference mPickUpPreference;
     private SwitchPreference mHandwavePreference;
