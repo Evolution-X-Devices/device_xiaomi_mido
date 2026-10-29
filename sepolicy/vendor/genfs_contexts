@@ -85,8 +85,3 @@ genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-02/200f000.q
 genfscon sysfs /devices/platform/soc/200f000.qcom,spmi/spmi-0/spmi0-02/200f000.qcom,spmi:qcom,pmi8950@2:qcom,qpnp-smbcharger/wakeup/wakeup			u:object_r:sysfs_wakeup:s0
 
 
-
-# Kernel 4.19 - CPU->DDR devfreq
-genfscon sysfs /devices/platform/soc/soc:qcom,cpu-cpu-ddr-bw/devfreq				u:object_r:sysfs_devfreq:s0
-genfscon sysfs /devices/platform/soc/soc:qcom,cpu0-cpu-ddr-latfloor/devfreq			u:object_r:sysfs_devfreq:s0
-genfscon sysfs /devices/platform/soc/soc:qcom,cpu4-cpu-ddr-latfloor/devfreq			u:object_r:sysfs_devfreq:s0
