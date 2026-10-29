@@ -39,8 +39,13 @@ function 8953_sched_dcvs_eas()
     #default value for hispeed_load is 90, for 8953 and sdm450 it should be 85
     echo 85 > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_load
 
-    echo "0:1248000" > /sys/module/cpu_boost/parameters/input_boost_freq
-    echo 120 > /sys/module/cpu_boost/parameters/input_boost_ms
+    if [ -d /sys/devices/system/cpu/cpu_boost ]; then
+        echo "0:1401600 4:1401600" > /sys/devices/system/cpu/cpu_boost/input_boost_freq
+        echo 100 > /sys/devices/system/cpu/cpu_boost/input_boost_ms
+    else
+        echo "0:1248000" > /sys/module/cpu_boost/parameters/input_boost_freq
+        echo 120 > /sys/module/cpu_boost/parameters/input_boost_ms
+    fi
 }
 
 function 8917_sched_dcvs_eas()
@@ -1893,50 +1898,52 @@ case "$target" in
                     echo "cpufreq" > $devfreq_gov
                 done
 
-                for devfreq_gov in /sys/class/devfreq/soc:qcom,cpubw/governor
+                # 4.9 names the CPU->DDR node qcom,cpubw, 4.19 qcom,cpu-cpu-ddr-bw
+                for cpubw in /sys/class/devfreq/soc:qcom,cpubw /sys/class/devfreq/soc:qcom,cpu-cpu-ddr-bw
                 do
-                    echo "bw_hwmon" > $devfreq_gov
-                    for cpu_io_percent in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/io_percent
+                    [ -d $cpubw ] || continue
+                    echo "bw_hwmon" > $cpubw/governor
+                    for cpu_io_percent in $cpubw/bw_hwmon/io_percent
                     do
                         echo 34 > $cpu_io_percent
                     done
-                    for cpu_guard_band in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/guard_band_mbps
+                    for cpu_guard_band in $cpubw/bw_hwmon/guard_band_mbps
                     do
                         echo 0 > $cpu_guard_band
                     done
-                    for cpu_hist_memory in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/hist_memory
+                    for cpu_hist_memory in $cpubw/bw_hwmon/hist_memory
                     do
                         echo 20 > $cpu_hist_memory
                     done
-                    for cpu_hyst_length in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/hyst_length
+                    for cpu_hyst_length in $cpubw/bw_hwmon/hyst_length
                     do
                         echo 10 > $cpu_hyst_length
                     done
-                    for cpu_idle_mbps in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/idle_mbps
+                    for cpu_idle_mbps in $cpubw/bw_hwmon/idle_mbps
                     do
                         echo 1600 > $cpu_idle_mbps
                     done
-                    for cpu_low_power_delay in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/low_power_delay
+                    for cpu_low_power_delay in $cpubw/bw_hwmon/low_power_delay
                     do
                         echo 20 > $cpu_low_power_delay
                     done
-                    for cpu_low_power_io_percent in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/low_power_io_percent
+                    for cpu_low_power_io_percent in $cpubw/bw_hwmon/low_power_io_percent
                     do
                         echo 34 > $cpu_low_power_io_percent
                     done
-                    for cpu_mbps_zones in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/mbps_zones
+                    for cpu_mbps_zones in $cpubw/bw_hwmon/mbps_zones
                     do
                         echo "1611 3221 5859 6445 7104" > $cpu_mbps_zones
                     done
-                    for cpu_sample_ms in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/sample_ms
+                    for cpu_sample_ms in $cpubw/bw_hwmon/sample_ms
                     do
                         echo 4 > $cpu_sample_ms
                     done
-                    for cpu_up_scale in /sys/class/devfreq/soc:qcom,cpubw/bw_hwmon/up_scale
+                    for cpu_up_scale in $cpubw/bw_hwmon/up_scale
                     do
                         echo 250 > $cpu_up_scale
                     done
-                    for cpu_min_freq in /sys/class/devfreq/soc:qcom,cpubw/min_freq
+                    for cpu_min_freq in $cpubw/min_freq
                     do
                         echo 1611 > $cpu_min_freq
                     done
