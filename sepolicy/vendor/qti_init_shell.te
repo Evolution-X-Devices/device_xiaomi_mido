@@ -18,5 +18,3 @@ allow qti_init_shell sysfs_leds:file rw_file_perms;
 allow qti_init_shell vendor_radio_data_file:dir rw_dir_perms;
 allow qti_init_shell vendor_radio_data_file:dir create_dir_perms;
 allow qti_init_shell vendor_radio_data_file:file create_file_perms;
-
-r_dir_file(qti_init_shell, proc_boot_reason)
