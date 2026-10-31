@@ -7,10 +7,8 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:title="@string/app_opt_title">
 
-    <Preference
-        android:key="optimize_all"
-        android:title="@string/app_opt_all_title"
-        android:summary="@string/app_opt_all_summary" />
+    <org.lineageos.settings.appopt.AppOptimizationHeaderPreference
+        android:key="app_opt_header" />
 
     <PreferenceCategory
         android:key="full_optimization"

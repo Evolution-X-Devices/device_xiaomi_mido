@@ -1,0 +1,17 @@
+type xiaomiparts_appopt, domain, coredomain;
+type xiaomiparts_appopt_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(xiaomiparts_appopt)
+
+# sh, getprop/setprop and cmd
+allow xiaomiparts_appopt shell_exec:file rx_file_perms;
+allow xiaomiparts_appopt toolbox_exec:file rx_file_perms;
+allow xiaomiparts_appopt system_file:file rx_file_perms;
+
+# cmd package compile
+binder_use(xiaomiparts_appopt)
+binder_call(xiaomiparts_appopt, system_server)
+allow xiaomiparts_appopt package_service:service_manager find;
+
+get_prop(xiaomiparts_appopt, xiaomiparts_appopt_prop)
+set_prop(xiaomiparts_appopt, xiaomiparts_appopt_prop)

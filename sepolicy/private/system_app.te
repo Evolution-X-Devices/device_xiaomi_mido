@@ -1,0 +1,2 @@
+# XiaomiParts App optimization
+set_prop(system_app, xiaomiparts_appopt_prop)

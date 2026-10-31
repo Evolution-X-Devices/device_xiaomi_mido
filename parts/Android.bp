@@ -19,8 +19,27 @@ android_app {
         "org.lineageos.settings.resources",
     ],
 
+    required: [
+        "init.xiaomiparts_appopt.rc",
+        "xiaomiparts_appopt",
+    ],
+
     optimize: {
         proguard_flags_files: ["proguard.flags"],
         shrink_resources: true,
     },
+}
+
+sh_binary {
+    name: "xiaomiparts_appopt",
+    src: "appopt/xiaomiparts_appopt.sh",
+    filename: "xiaomiparts_appopt",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "init.xiaomiparts_appopt.rc",
+    src: "appopt/init.xiaomiparts_appopt.rc",
+    sub_dir: "init",
+    system_ext_specific: true,
 }

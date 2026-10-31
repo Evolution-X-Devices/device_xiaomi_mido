@@ -1,0 +1,12 @@
+# Copyright (C) 2026 The LineageOS Project
+#
+# SPDX-License-Identifier: Apache-2.0
+
+service xiaomiparts_appopt /system_ext/bin/xiaomiparts_appopt
+    user shell
+    group shell
+    oneshot
+    disabled
+
+on property:sys.xiaomiparts.appopt.request=start
+    start xiaomiparts_appopt
