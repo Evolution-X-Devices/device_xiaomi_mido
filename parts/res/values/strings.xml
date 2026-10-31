@@ -105,12 +105,22 @@
     <string name="kcal_presets">@string/presets_dialog_title</string>
     <string name="kcal_reset">Reset</string>
 
-    <!-- App optimization -->
-    <string name="app_opt_title">App optimization</string>
-    <string name="app_opt_summary">Compile apps ahead of time for faster launches</string>
-    <string name="app_opt_all_title">Optimize all apps</string>
-    <string name="app_opt_all_summary">Compile every app using its usage profile, like overnight optimization does. Can take several minutes.</string>
-    <string name="app_opt_all_progress">Optimizing apps\u2026 %1$d of %2$d</string>
-    <string name="app_opt_full_title">Full optimization</string>
-    <string name="app_opt_full_summary">Compile all code of the selected apps ahead of time. They launch and run faster, but use more storage. Kept after app updates.</string>
+    <!-- App Optimization -->
+    <string name="app_opt_title">App Optimization</string>
+    <string name="app_opt_summary">Precompile apps for faster launches</string>
+    <string name="app_opt_description">ODEX optimization makes apps launch faster.</string>
+    <string name="app_opt_state_checking">Checking apps\u2026</string>
+    <string name="app_opt_state_running">Optimizing apps\u2026 %1$d of %2$d</string>
+    <string name="app_opt_state_complete">Optimization complete \u00b7 %1$s</string>
+    <string name="app_opt_state_idle">%1$d of %2$d apps optimized</string>
+    <string name="app_opt_button_start">Start optimization</string>
+    <string name="app_opt_button_running">Optimizing\u2026</string>
+    <string name="app_opt_refresh">Refresh</string>
+    <string name="app_opt_full_title">ODEX precompile</string>
+    <string name="app_opt_full_summary">Precompile all code of the selected apps ahead of time. They launch and run faster, but use more storage. Kept after app updates.</string>
+    <string name="app_opt_status_precompiled">ODEX precompiled</string>
+    <string name="app_opt_status_optimized">Optimized</string>
+    <string name="app_opt_status_not_optimized">Not optimized</string>
+    <string name="app_opt_status_unknown">Status unknown</string>
+    <string name="app_opt_status_compiling">Compiling\u2026</string>
 </resources>
