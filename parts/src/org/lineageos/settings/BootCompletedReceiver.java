@@ -63,6 +63,14 @@ public class BootCompletedReceiver extends BroadcastReceiver implements Controll
 
         VibratorStrengthPreference.restore(context);
 
+        // SettingsProvider has no default for the animator scale, so match the
+        // 0.8x window/transition defaults once without overriding user changes
+        if (Settings.Global.getString(context.getContentResolver(),
+                Settings.Global.ANIMATOR_DURATION_SCALE) == null) {
+            Settings.Global.putFloat(context.getContentResolver(),
+                    Settings.Global.ANIMATOR_DURATION_SCALE, 0.8f);
+        }
+
         FileUtils.setValue(TorchSettings.TORCH_1_BRIGHTNESS_PATH,
                 Settings.Secure.getInt(context.getContentResolver(),
                         TorchSettings.KEY_WHITE_TORCH_BRIGHTNESS, 100));
