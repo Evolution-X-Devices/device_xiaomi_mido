@@ -45,7 +45,7 @@ public class VibratorOverrideModeSwitch implements OnPreferenceChangeListener {
     }
 
     public static boolean isCurrentlyEnabled(Context context) {
-        return FileUtils.getFileValueAsBoolean(getFile(), false);
+        return VibratorStrengthPreference.isOverrideEnabled(context);
     }
 
     @Override
@@ -53,7 +53,8 @@ public class VibratorOverrideModeSwitch implements OnPreferenceChangeListener {
         final String key = preference.getKey();
         switch (key) {
             case VibratorSettings.PREF_VMAX_OVERRIDE_SWITCH:
-                FileUtils.setValue(VibratorSettings.VMAX_OVERRIDE_PATH, (boolean) newValue);
+                // The node holds the level in mV, not an on/off flag
+                VibratorStrengthPreference.apply(mContext, (boolean) newValue);
                 break;
 
             default:

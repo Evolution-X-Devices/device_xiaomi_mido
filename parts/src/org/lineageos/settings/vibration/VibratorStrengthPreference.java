@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.AttributeSet;
 import android.os.Vibrator;
+import android.provider.Settings;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceViewHolder;
@@ -49,7 +50,7 @@ public class VibratorStrengthPreference extends CustomSeekBarPreference {
         mMaxValue = mMaxVal;
         mDefaultValueExists = true;
         mDefaultValue = mDefVal;
-        mValue = Integer.parseInt(loadValue());
+        mValue = Integer.parseInt(loadValue(context));
 
         setPersistent(false);
         mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
@@ -59,25 +60,38 @@ public class VibratorStrengthPreference extends CustomSeekBarPreference {
         return FileUtils.fileWritable(FILE_LEVEL);
     }
 
-    public static String loadValue() {
-        return FileUtils.getFileValue(FILE_LEVEL, String.valueOf(mDefVal));
+    // The kernel node reads 0 while the override is off, so keep the level in prefs
+    public static String loadValue(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("vib_strength", String.valueOf(mDefVal));
     }
 
-    private void setValue(String newValue) {
-        FileUtils.writeValue(FILE_LEVEL, newValue);
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
-        editor.putString("vib_strength", newValue);
-        editor.commit();
-        mVibrator.vibrate(testVibrationPattern, -1);
+    public static boolean isOverrideEnabled(Context context) {
+        return Settings.Secure.getInt(context.getContentResolver(),
+                VibratorSettings.PREF_VMAX_OVERRIDE_SWITCH, 0) == 1;
     }
 
-    public static void restore(Context context) {
+    // 0 hands VMAX back to the driver default
+    public static void apply(Context context, boolean enabled) {
         if (!isSupported()) {
             return;
         }
 
-        String storedValue = PreferenceManager.getDefaultSharedPreferences(context).getString("vib_strength", String.valueOf(mDefVal));
-        FileUtils.writeValue(FILE_LEVEL, storedValue);
+        FileUtils.writeValue(FILE_LEVEL, enabled ? loadValue(context) : "0");
+    }
+
+    private void setValue(String newValue) {
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
+        editor.putString("vib_strength", newValue);
+        editor.commit();
+        if (isOverrideEnabled(getContext())) {
+            FileUtils.writeValue(FILE_LEVEL, newValue);
+        }
+        mVibrator.vibrate(testVibrationPattern, -1);
+    }
+
+    public static void restore(Context context) {
+        apply(context, isOverrideEnabled(context));
     }
 
     @Override

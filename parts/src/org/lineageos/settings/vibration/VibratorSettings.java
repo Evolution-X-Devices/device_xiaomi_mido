@@ -54,9 +54,16 @@ public class VibratorSettings extends PreferenceFragment {
         mVmaxOverrideModeSwitch = (TwoStatePreference) findPreference(PREF_VMAX_OVERRIDE_SWITCH);
         mVmaxOverrideModeSwitch.setEnabled(VibratorOverrideModeSwitch.isSupported());
         mVmaxOverrideModeSwitch.setChecked(VibratorOverrideModeSwitch.isCurrentlyEnabled(this.getContext()));
-        mVmaxOverrideModeSwitch.setOnPreferenceChangeListener(new VibratorOverrideModeSwitch(getContext()));
 
         VibratorStrengthPreference mVibratorStrength = findPreference("vib_strength");
-        mVibratorStrength.setEnabled(VibratorStrengthPreference.isSupported());
+        mVibratorStrength.setEnabled(VibratorStrengthPreference.isSupported()
+                && mVmaxOverrideModeSwitch.isChecked());
+
+        VibratorOverrideModeSwitch overrideSwitch = new VibratorOverrideModeSwitch(getContext());
+        mVmaxOverrideModeSwitch.setOnPreferenceChangeListener((preference, newValue) -> {
+            mVibratorStrength.setEnabled(VibratorStrengthPreference.isSupported()
+                    && (boolean) newValue);
+            return overrideSwitch.onPreferenceChange(preference, newValue);
+        });
     }
 }
