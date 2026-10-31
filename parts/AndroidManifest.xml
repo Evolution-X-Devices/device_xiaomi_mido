@@ -133,6 +133,20 @@
                 android:resource="@string/device_kcal_summary" />
         </activity>
 
+        <activity
+            android:name=".appopt.AppOptimizationActivity"
+            android:exported="true"
+            android:label="@string/app_opt_title"
+            android:theme="@style/Theme.SubSettingsBase">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+            </intent-filter>
+            <meta-data android:name="com.android.settings.category"
+                       android:value="com.android.settings.category.ia.apps" />
+            <meta-data android:name="com.android.settings.summary"
+                       android:resource="@string/app_opt_summary" />
+        </activity>
+
         <provider
             android:name=".PartsSearchIndexablesProvider"
             android:authorities="org.lineageos.settings"

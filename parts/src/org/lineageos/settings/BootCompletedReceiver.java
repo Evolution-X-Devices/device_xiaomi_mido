@@ -26,6 +26,7 @@ import android.provider.Settings;
 
 import androidx.preference.PreferenceManager;
 
+import org.lineageos.settings.appopt.AppOptimizationUtils;
 import org.lineageos.settings.doze.DozeUtils;
 import org.lineageos.settings.preferences.FileUtils;
 import org.lineageos.settings.soundcontrol.SoundControlSettings;
@@ -62,6 +63,8 @@ public class BootCompletedReceiver extends BroadcastReceiver implements Controll
         }
 
         VibratorStrengthPreference.restore(context);
+
+        AppOptimizationUtils.registerUpdateReceiver(context);
 
         // SettingsProvider has no default for the animator scale, so match the
         // 0.8x window/transition defaults once without overriding user changes

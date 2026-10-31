@@ -104,4 +104,13 @@
     <!-- menu -->
     <string name="kcal_presets">@string/presets_dialog_title</string>
     <string name="kcal_reset">Reset</string>
+
+    <!-- App optimization -->
+    <string name="app_opt_title">App optimization</string>
+    <string name="app_opt_summary">Compile apps ahead of time for faster launches</string>
+    <string name="app_opt_all_title">Optimize all apps</string>
+    <string name="app_opt_all_summary">Compile every app using its usage profile, like overnight optimization does. Can take several minutes.</string>
+    <string name="app_opt_all_progress">Optimizing apps\u2026 %1$d of %2$d</string>
+    <string name="app_opt_full_title">Full optimization</string>
+    <string name="app_opt_full_summary">Compile all code of the selected apps ahead of time. They launch and run faster, but use more storage. Kept after app updates.</string>
 </resources>
