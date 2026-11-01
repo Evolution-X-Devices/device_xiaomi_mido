@@ -67,8 +67,13 @@ public class VibratorStrengthPreference extends CustomSeekBarPreference {
     }
 
     public static boolean isOverrideEnabled(Context context) {
+        // Default to enabled so the saved level is applied on boot before
+        // the user has ever opened the vibration settings UI.  The
+        // SecureSettingSwitchPreference only writes Settings.Secure once
+        // the preference screen inflates, so until then getInt() would
+        // return the fallback — use 1 (on) to match pre-fix behavior.
         return Settings.Secure.getInt(context.getContentResolver(),
-                VibratorSettings.PREF_VMAX_OVERRIDE_SWITCH, 0) == 1;
+                VibratorSettings.PREF_VMAX_OVERRIDE_SWITCH, 1) == 1;
     }
 
     // 0 hands VMAX back to the driver default
