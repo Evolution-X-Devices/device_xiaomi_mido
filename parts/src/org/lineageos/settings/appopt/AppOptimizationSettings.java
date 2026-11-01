@@ -120,6 +120,12 @@ public class AppOptimizationSettings extends PreferenceFragment implements
                 if (!info.enabled || (info.flags & ApplicationInfo.FLAG_HAS_CODE) == 0) {
                     continue;
                 }
+                if ("android".equals(info.packageName)
+                        || info.sourceDir == null
+                        || info.sourceDir.startsWith("/apex")
+                        || info.sourceDir.contains("/apex/")) {
+                    continue;
+                }
                 int status = AppOptimizationUtils.getStatus(info);
                 statuses.put(info.packageName, status);
                 if (status == AppOptimizationUtils.STATUS_UNKNOWN) {
