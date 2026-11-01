@@ -12,6 +12,7 @@ allow xiaomiparts_appopt system_file:file rx_file_perms;
 binder_use(xiaomiparts_appopt)
 binder_call(xiaomiparts_appopt, system_server)
 allow xiaomiparts_appopt package_service:service_manager find;
+allow xiaomiparts_appopt servicemanager:binder call;
 
 get_prop(xiaomiparts_appopt, xiaomiparts_appopt_prop)
 set_prop(xiaomiparts_appopt, xiaomiparts_appopt_prop)

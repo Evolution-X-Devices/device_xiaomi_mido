@@ -51,7 +51,8 @@ public final class AppOptimizationUtils {
     // ART only takes compile requests from root or shell
     private static final String PROP = "sys.xiaomiparts.appopt";
     private static final String PROP_REQUEST = PROP + ".request";
-    private static final long COMPILE_TIMEOUT_MS = 10 * 60 * 1000;
+    private static final String PROP_SVC = "init.svc.xiaomiparts_appopt";
+    private static final long COMPILE_TIMEOUT_MS = 2 * 60 * 1000;
 
     private static final ExecutorService sExecutor = Executors.newSingleThreadExecutor();
     private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
@@ -122,9 +123,14 @@ public final class AppOptimizationUtils {
         final List<String> packages = new ArrayList<>();
         for (ApplicationInfo info : appContext.getPackageManager()
                 .getInstalledApplications(PackageManager.MATCH_ALL)) {
-            if (info.enabled && (info.flags & ApplicationInfo.FLAG_HAS_CODE) != 0) {
-                packages.add(info.packageName);
+            if (!info.enabled || (info.flags & ApplicationInfo.FLAG_HAS_CODE) == 0) {
+                continue;
             }
+            // APEX modules and the core android package cannot be compiled
+            if (info.isApex() || "android".equals(info.packageName)) {
+                continue;
+            }
+            packages.add(info.packageName);
         }
 
         sOptimizingAll = true;
@@ -155,9 +161,29 @@ public final class AppOptimizationUtils {
 
     // Runs on sExecutor only, so requests never overlap
     private static boolean compile(String packageName, String filter, boolean force) {
+        // Wait for the previous oneshot service instance to be fully reaped by
+        // init, otherwise init sees the service as still running and silently
+        // drops the next start, which makes us spin until the timeout.
+        long reapDeadline = SystemClock.elapsedRealtime() + 5000;
+        while (SystemClock.elapsedRealtime() < reapDeadline) {
+            String svcState = SystemProperties.get(PROP_SVC, "stopped");
+            if ("stopped".equals(svcState) || svcState.isEmpty()) {
+                break;
+            }
+            SystemClock.sleep(50);
+        }
+
+        // Clear the request property first so the poll loop below cannot
+        // read a stale "done"/"failed" from the previous compile.
+        SystemProperties.set(PROP_REQUEST, "idle");
         SystemProperties.set(PROP + ".pkg", packageName);
         SystemProperties.set(PROP + ".filter", filter);
         SystemProperties.set(PROP + ".force", force ? "1" : "0");
+
+        // Brief pause to let the property service propagate "idle" before
+        // the edge transition to "start" that triggers the init service.
+        SystemClock.sleep(50);
+
         SystemProperties.set(PROP_REQUEST, "start");
 
         final long deadline = SystemClock.elapsedRealtime() + COMPILE_TIMEOUT_MS;
