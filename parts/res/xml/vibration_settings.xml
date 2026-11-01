@@ -22,7 +22,7 @@
 
         <org.lineageos.settings.preferences.SecureSettingSwitchPreference
             android:key="vmax_override"
-            android:defaultValue="0"
+            android:defaultValue="true"
             android:title="@string/vmax_override_mode_title"
             android:summary="@string/vmax_override_mode_summary" />
 
