@@ -1,3 +1,4 @@
 # cmd hands its stdio and shell callback to system_server
 allow system_server xiaomiparts_appopt:fd use;
+allow system_server xiaomiparts_appopt:fifo_file { read write getattr };
 binder_call(system_server, xiaomiparts_appopt)
