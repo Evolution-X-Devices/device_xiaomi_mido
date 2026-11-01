@@ -127,7 +127,10 @@ public final class AppOptimizationUtils {
                 continue;
             }
             // APEX modules and the core android package cannot be compiled
-            if (info.isApex() || "android".equals(info.packageName)) {
+            if ("android".equals(info.packageName)
+                    || info.sourceDir == null
+                    || info.sourceDir.startsWith("/apex")
+                    || info.sourceDir.contains("/apex/")) {
                 continue;
             }
             packages.add(info.packageName);
