@@ -11,6 +11,18 @@
         android:key="app_opt_header" />
 
     <PreferenceCategory
+        android:key="app_opt_options"
+        android:title="@string/app_opt_options_title">
+
+        <SwitchPreference
+            android:key="app_opt_compile_gms"
+            android:defaultValue="false"
+            android:title="@string/app_opt_compile_gms_title"
+            android:summary="@string/app_opt_compile_gms_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="full_optimization"
         android:title="@string/app_opt_full_title">
 
@@ -20,5 +32,13 @@
             android:summary="@string/app_opt_full_summary" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="app_opt_user_apps"
+        android:title="@string/app_opt_user_apps_title" />
+
+    <PreferenceCategory
+        android:key="app_opt_system_apps"
+        android:title="@string/app_opt_system_apps_title" />
 
 </PreferenceScreen>

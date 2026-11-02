@@ -118,6 +118,12 @@
     <string name="app_opt_refresh">Refresh</string>
     <string name="app_opt_full_title">ODEX precompile</string>
     <string name="app_opt_full_summary">Precompile all code of the selected apps ahead of time. They launch and run faster, but use more storage. Kept after app updates.</string>
+    <string name="app_opt_options_title">Options</string>
+    <string name="app_opt_compile_gms_title">Compile Google Play services</string>
+    <string name="app_opt_compile_gms_summary">Fully compile Google Play services on the next optimization. It runs faster, but this takes several minutes and uses a few hundred MB of storage. When off, it is left as the system compiled it.</string>
+    <string name="app_opt_status_left_as_is">Left as is</string>
+    <string name="app_opt_user_apps_title">Installed apps</string>
+    <string name="app_opt_system_apps_title">System apps</string>
     <string name="app_opt_status_precompiled">ODEX precompiled</string>
     <string name="app_opt_status_optimized">Optimized</string>
     <string name="app_opt_status_not_optimized">Not optimized</string>

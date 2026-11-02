@@ -43,9 +43,17 @@ public final class AppOptimizationUtils {
     public static final int STATUS_NOT_OPTIMIZED = 1;
     public static final int STATUS_OPTIMIZED = 2;
     public static final int STATUS_PRECOMPILED = 3;
+    // Not compiled because the user chose to leave it (GMS switch off)
+    public static final int STATUS_LEFT_AS_IS = 4;
 
     private static final String PREF_FULL_PACKAGES = "app_opt_full_packages";
     private static final String PREF_LAST_RUN = "app_opt_last_run";
+    // Persisted by the switch in app_optimization_settings.xml
+    public static final String PREF_COMPILE_GMS = "app_opt_compile_gms";
+
+    // Shared with other apps and huge, so ART leaves it uncompiled without a
+    // profile and a full compile costs hundreds of MB and many minutes
+    public static final String GMS_PACKAGE = "com.google.android.gms";
 
     // Handled by the xiaomiparts_appopt init service, which runs as shell because
     // ART only takes compile requests from root or shell
@@ -53,6 +61,8 @@ public final class AppOptimizationUtils {
     private static final String PROP_REQUEST = PROP + ".request";
     private static final String PROP_SVC = "init.svc.xiaomiparts_appopt";
     private static final long COMPILE_TIMEOUT_MS = 2 * 60 * 1000;
+    // A full speed compile of a large app (GMS, Chrome) takes several minutes on msm8953
+    private static final long COMPILE_FULL_TIMEOUT_MS = 15 * 60 * 1000;
 
     private static final ExecutorService sExecutor = Executors.newSingleThreadExecutor();
     private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
@@ -85,6 +95,36 @@ public final class AppOptimizationUtils {
         return PreferenceManager.getDefaultSharedPreferences(context).getLong(PREF_LAST_RUN, 0);
     }
 
+    public static boolean shouldCompileGms(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(PREF_COMPILE_GMS, false);
+    }
+
+    /**
+     * Whether Start optimization leaves this app as ART compiled it: GMS,
+     * unless the user turned on compiling it or picked ODEX precompile for it.
+     */
+    public static boolean isLeftAsIs(Context context, String packageName) {
+        return GMS_PACKAGE.equals(packageName)
+                && !shouldCompileGms(context)
+                && !isFullyOptimized(context, packageName);
+    }
+
+    /**
+     * Turning GMS compiling off puts GMS back on what ART picks by itself,
+     * dropping the large speed odex. Turning it on takes effect on the next
+     * Start optimization, since a full compile takes many minutes.
+     */
+    public static void onCompileGmsChanged(Context context, boolean compile) {
+        if (compile || isFullyOptimized(context, GMS_PACKAGE)) {
+            return;
+        }
+        sExecutor.execute(() -> {
+            compile(GMS_PACKAGE, FILTER_DEFAULT, true);
+            notifyFinished();
+        });
+    }
+
     public static void setProgressListener(ProgressListener listener) {
         sListener = listener;
     }
@@ -114,15 +154,13 @@ public final class AppOptimizationUtils {
         });
     }
 
-    public static void optimizeAll(Context context) {
-        if (sOptimizingAll) {
-            return;
-        }
-        final Context appContext = context.getApplicationContext();
-        final Set<String> full = getFullPackages(appContext);
-        final List<String> packages = new ArrayList<>();
-        for (ApplicationInfo info : appContext.getPackageManager()
-                .getInstalledApplications(PackageManager.MATCH_ALL)) {
+    /**
+     * Every enabled app on the device that ART can compile: user apps and
+     * system apps, with or without a launcher icon.
+     */
+    public static List<ApplicationInfo> getOptimizableApps(PackageManager pm) {
+        final List<ApplicationInfo> apps = new ArrayList<>();
+        for (ApplicationInfo info : pm.getInstalledApplications(PackageManager.MATCH_ALL)) {
             if (!info.enabled || (info.flags & ApplicationInfo.FLAG_HAS_CODE) == 0) {
                 continue;
             }
@@ -133,17 +171,45 @@ public final class AppOptimizationUtils {
                     || info.sourceDir.contains("/apex/")) {
                 continue;
             }
-            packages.add(info.packageName);
+            apps.add(info);
         }
+        return apps;
+    }
+
+    public static boolean isSystemApp(ApplicationInfo info) {
+        return (info.flags & (ApplicationInfo.FLAG_SYSTEM
+                | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
+    }
+
+    public static void optimizeAll(Context context) {
+        if (sOptimizingAll) {
+            return;
+        }
+        final Context appContext = context.getApplicationContext();
+        final Set<String> full = getFullPackages(appContext);
+        final boolean compileGms = shouldCompileGms(appContext);
+        final List<ApplicationInfo> packages = getOptimizableApps(appContext.getPackageManager());
 
         sOptimizingAll = true;
         sProgress = 0;
         sTotal = packages.size();
         sExecutor.execute(() -> {
-            for (String packageName : packages) {
-                // Keep precompiled apps on their filter
-                compile(packageName, full.contains(packageName) ? FILTER_FULL : FILTER_DEFAULT,
-                        false);
+            for (ApplicationInfo info : packages) {
+                final String packageName = info.packageName;
+                if (full.contains(packageName)) {
+                    // Keep precompiled apps on their filter
+                    compile(packageName, FILTER_FULL, false);
+                } else {
+                    compile(packageName, FILTER_DEFAULT, false);
+                    // ART turns speed-profile into verify (or quicken for shared
+                    // packages) when the app has no usable profile yet, which is
+                    // the case for most system apps and anything rarely opened,
+                    // so nothing gets compiled. Compile those ahead of time.
+                    if ((compileGms || !GMS_PACKAGE.equals(packageName))
+                            && getStatus(info) == STATUS_NOT_OPTIMIZED) {
+                        compile(packageName, FILTER_FULL, false);
+                    }
+                }
                 sProgress++;
                 sMainHandler.post(() -> {
                     if (sListener != null) sListener.onProgress(sProgress, sTotal);
@@ -167,7 +233,9 @@ public final class AppOptimizationUtils {
         // Wait for the previous oneshot service instance to be fully reaped by
         // init, otherwise init sees the service as still running and silently
         // drops the next start, which makes us spin until the timeout.
-        long reapDeadline = SystemClock.elapsedRealtime() + 5000;
+        // If the previous request timed out, its compile may still be running,
+        // so allow as long as a full compile takes.
+        long reapDeadline = SystemClock.elapsedRealtime() + COMPILE_FULL_TIMEOUT_MS;
         while (SystemClock.elapsedRealtime() < reapDeadline) {
             String svcState = SystemProperties.get(PROP_SVC, "stopped");
             if ("stopped".equals(svcState) || svcState.isEmpty()) {
@@ -189,7 +257,8 @@ public final class AppOptimizationUtils {
 
         SystemProperties.set(PROP_REQUEST, "start");
 
-        final long deadline = SystemClock.elapsedRealtime() + COMPILE_TIMEOUT_MS;
+        final long deadline = SystemClock.elapsedRealtime()
+                + (FILTER_FULL.equals(filter) ? COMPILE_FULL_TIMEOUT_MS : COMPILE_TIMEOUT_MS);
         while (SystemClock.elapsedRealtime() < deadline) {
             String result = SystemProperties.get(PROP_REQUEST);
             if ("done".equals(result)) {
