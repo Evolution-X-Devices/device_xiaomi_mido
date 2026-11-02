@@ -7,10 +7,10 @@
 package org.lineageos.settings.appopt;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
+import android.icu.text.Collator;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -24,8 +24,8 @@ import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragment;
 import androidx.preference.SwitchPreference;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +38,8 @@ public class AppOptimizationSettings extends PreferenceFragment implements
         AppOptimizationUtils.ProgressListener {
 
     private static final String KEY_HEADER = "app_opt_header";
-    private static final String KEY_PRECOMPILE = "full_optimization";
+    private static final String KEY_USER_APPS = "app_opt_user_apps";
+    private static final String KEY_SYSTEM_APPS = "app_opt_system_apps";
     private static final int MENU_REFRESH = Menu.FIRST;
 
     // Status reads touch every app's oat files, keep them off the main thread
@@ -46,7 +47,8 @@ public class AppOptimizationSettings extends PreferenceFragment implements
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 
     private AppOptimizationHeaderPreference mHeader;
-    private PreferenceCategory mPrecompile;
+    private PreferenceCategory mUserApps;
+    private PreferenceCategory mSystemApps;
     private int mOptimizedPercent = -1;
     private int mOptimized;
     private int mTotal;
@@ -62,7 +64,16 @@ public class AppOptimizationSettings extends PreferenceFragment implements
             updateHeader();
         });
 
-        mPrecompile = (PreferenceCategory) findPreference(KEY_PRECOMPILE);
+        findPreference(AppOptimizationUtils.PREF_COMPILE_GMS).setOnPreferenceChangeListener(
+                (preference, value) -> {
+                    AppOptimizationUtils.onCompileGmsChanged(getContext(), (Boolean) value);
+                    // Listener runs before the value is saved, so recount afterwards
+                    mHandler.post(this::refreshStatus);
+                    return true;
+                });
+
+        mUserApps = (PreferenceCategory) findPreference(KEY_USER_APPS);
+        mSystemApps = (PreferenceCategory) findPreference(KEY_SYSTEM_APPS);
         addApps();
     }
 
@@ -116,19 +127,17 @@ public class AppOptimizationSettings extends PreferenceFragment implements
             final Map<String, Integer> statuses = new HashMap<>();
             int optimized = 0;
             int total = 0;
-            for (ApplicationInfo info : pm.getInstalledApplications(PackageManager.MATCH_ALL)) {
-                if (!info.enabled || (info.flags & ApplicationInfo.FLAG_HAS_CODE) == 0) {
-                    continue;
-                }
-                if ("android".equals(info.packageName)
-                        || info.sourceDir == null
-                        || info.sourceDir.startsWith("/apex")
-                        || info.sourceDir.contains("/apex/")) {
-                    continue;
-                }
+            for (ApplicationInfo info : AppOptimizationUtils.getOptimizableApps(pm)) {
                 int status = AppOptimizationUtils.getStatus(info);
+                // GMS with its switch off is skipped on purpose, so don't count
+                // it as an app that still needs optimizing
+                if (status == AppOptimizationUtils.STATUS_NOT_OPTIMIZED
+                        && AppOptimizationUtils.isLeftAsIs(context, info.packageName)) {
+                    status = AppOptimizationUtils.STATUS_LEFT_AS_IS;
+                }
                 statuses.put(info.packageName, status);
-                if (status == AppOptimizationUtils.STATUS_UNKNOWN) {
+                if (status == AppOptimizationUtils.STATUS_UNKNOWN
+                        || status == AppOptimizationUtils.STATUS_LEFT_AS_IS) {
                     continue;
                 }
                 total++;
@@ -146,10 +155,21 @@ public class AppOptimizationSettings extends PreferenceFragment implements
                 mOptimized = finalOptimized;
                 mTotal = finalTotal;
                 mOptimizedPercent = finalTotal == 0 ? -1 : finalOptimized * 100 / finalTotal;
-                for (int i = 0; i < mPrecompile.getPreferenceCount(); i++) {
-                    Preference pref = mPrecompile.getPreference(i);
-                    Integer status = statuses.get(pref.getKey());
-                    if (pref instanceof SwitchPreference && status != null) {
+                for (PreferenceCategory category : new PreferenceCategory[] {
+                        mUserApps, mSystemApps }) {
+                    for (int i = 0; i < category.getPreferenceCount(); i++) {
+                        Preference pref = category.getPreference(i);
+                        Integer status = statuses.get(pref.getKey());
+                        if (!(pref instanceof SwitchPreference) || status == null) {
+                            continue;
+                        }
+                        // Start optimization also compiles apps without a usage
+                        // profile with speed; only call it ODEX precompile when
+                        // the user picked it for that app.
+                        if (status == AppOptimizationUtils.STATUS_PRECOMPILED
+                                && !((SwitchPreference) pref).isChecked()) {
+                            status = AppOptimizationUtils.STATUS_OPTIMIZED;
+                        }
                         pref.setSummary(statusSummary(status));
                     }
                 }
@@ -189,39 +209,76 @@ public class AppOptimizationSettings extends PreferenceFragment implements
                 return R.string.app_opt_status_optimized;
             case AppOptimizationUtils.STATUS_NOT_OPTIMIZED:
                 return R.string.app_opt_status_not_optimized;
+            case AppOptimizationUtils.STATUS_LEFT_AS_IS:
+                return R.string.app_opt_status_left_as_is;
             default:
                 return R.string.app_opt_status_unknown;
         }
     }
 
+    private static final class AppEntry {
+        final String packageName;
+        final CharSequence label;
+        final Drawable icon;
+        final boolean system;
+
+        AppEntry(String packageName, CharSequence label, Drawable icon, boolean system) {
+            this.packageName = packageName;
+            this.label = label;
+            this.icon = icon;
+            this.system = system;
+        }
+    }
+
+    /**
+     * Lists every app on the device, not just the ones with a launcher icon,
+     * so system apps and services can be precompiled too. Labels and icons
+     * are loaded off the main thread since there can be hundreds of apps.
+     * Runs on mStatusExecutor before the first refreshStatus(), so the
+     * switches exist by the time their status is filled in.
+     */
     private void addApps() {
         final Context context = getContext();
-        final PackageManager pm = context.getPackageManager();
-        final Set<String> full = AppOptimizationUtils.getFullPackages(context);
-
-        Intent launcher = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
-        List<ResolveInfo> apps = pm.queryIntentActivities(launcher, 0);
-        apps.sort(new ResolveInfo.DisplayNameComparator(pm));
-
-        Set<String> added = new HashSet<>();
-        for (ResolveInfo app : apps) {
-            final String packageName = app.activityInfo.packageName;
-            if (!added.add(packageName) || packageName.equals(context.getPackageName())) {
-                continue;
+        final String ownPackage = context.getPackageName();
+        mStatusExecutor.execute(() -> {
+            final PackageManager pm = context.getPackageManager();
+            final List<AppEntry> entries = new ArrayList<>();
+            for (ApplicationInfo info : AppOptimizationUtils.getOptimizableApps(pm)) {
+                if (info.packageName.equals(ownPackage)) {
+                    continue;
+                }
+                entries.add(new AppEntry(info.packageName, info.loadLabel(pm),
+                        info.loadIcon(pm), AppOptimizationUtils.isSystemApp(info)));
             }
-
-            SwitchPreference pref = new SwitchPreference(context);
-            pref.setKey(packageName);
-            pref.setTitle(app.loadLabel(pm));
-            pref.setIcon(app.loadIcon(pm));
-            pref.setPersistent(false);
-            pref.setChecked(full.contains(packageName));
-            pref.setOnPreferenceChangeListener((preference, value) -> {
-                AppOptimizationUtils.setFullyOptimized(context, packageName, (Boolean) value);
-                preference.setSummary(R.string.app_opt_status_compiling);
-                return true;
+            final Collator collator = Collator.getInstance();
+            entries.sort((a, b) -> {
+                int result = collator.compare(a.label.toString(), b.label.toString());
+                return result != 0 ? result : a.packageName.compareTo(b.packageName);
             });
-            mPrecompile.addPreference(pref);
-        }
+
+            mHandler.post(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                final Set<String> full = AppOptimizationUtils.getFullPackages(context);
+                for (AppEntry entry : entries) {
+                    SwitchPreference pref = new SwitchPreference(context);
+                    pref.setKey(entry.packageName);
+                    pref.setTitle(entry.label);
+                    pref.setIcon(entry.icon);
+                    pref.setPersistent(false);
+                    pref.setChecked(full.contains(entry.packageName));
+                    pref.setOnPreferenceChangeListener((preference, value) -> {
+                        AppOptimizationUtils.setFullyOptimized(context, entry.packageName,
+                                (Boolean) value);
+                        preference.setSummary(R.string.app_opt_status_compiling);
+                        return true;
+                    });
+                    (entry.system ? mSystemApps : mUserApps).addPreference(pref);
+                }
+                mUserApps.setVisible(mUserApps.getPreferenceCount() > 0);
+                mSystemApps.setVisible(mSystemApps.getPreferenceCount() > 0);
+            });
+        });
     }
 }
