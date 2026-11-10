@@ -17,6 +17,8 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Ambient settings -->
     <string name="ambient_enable">Use Ambient Display</string>
+    <string name="doze_settings_help_title">Help</string>
+    <string name="doze_settings_help_text">These features use sensor events to launch a doze notification pulse. The chosen sensor is only enabled when the device receives a notification, helping to reduce battery usage. There is an option to enable the chosen sensor as soon as the screen turns off, but this will cause higher battery usage.</string>
 
     <!-- Audio amplification -->
     <string name="audio_title">Audio Amplification</string>
