@@ -1,23 +1,25 @@
 package org.lineageos.settings.kcal;
-import android.app.Activity;
-import android.app.Fragment;
+
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+
 import org.lineageos.settings.R;
 import org.lineageos.settings.Controller;
 
-public class KcalSettingsActivity extends Activity implements Controller {
+public class KcalSettingsActivity extends FragmentActivity implements Controller {
     private KcalSettings mKcalSettingsFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fragment fragment = getFragmentManager().findFragmentById(android.R.id.content);
+        Fragment fragment = getSupportFragmentManager().findFragmentById(android.R.id.content);
         if (fragment == null) {
             mKcalSettingsFragment = new KcalSettings();
-            getFragmentManager().beginTransaction()
+            getSupportFragmentManager().beginTransaction()
                     .add(android.R.id.content, mKcalSettingsFragment)
                     .commit();
         } else {
@@ -45,7 +47,7 @@ public class KcalSettingsActivity extends Activity implements Controller {
             mKcalSettingsFragment.setmSetOnBoot(SETONBOOT_DEFAULT);
             return true;
         } else if (itemId == R.id.action_preset) {
-            new PresetDialog().show(getFragmentManager(),
+            new PresetDialog().show(getSupportFragmentManager(),
                     KcalSettingsActivity.class.getName(), mKcalSettingsFragment);
             return true;
         }
