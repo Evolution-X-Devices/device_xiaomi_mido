@@ -3,7 +3,7 @@ package org.lineageos.settings.kcal;
 import android.os.Bundle;
 import android.provider.Settings;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceFragment;
+import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.Preference;
 import androidx.viewpager.widget.ViewPager;
 
@@ -18,7 +18,7 @@ import android.view.LayoutInflater;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
-public class KcalSettings extends PreferenceFragment implements
+public class KcalSettings extends PreferenceFragmentCompat implements
         Preference.OnPreferenceChangeListener, Controller {
 
     ViewPager viewPager;

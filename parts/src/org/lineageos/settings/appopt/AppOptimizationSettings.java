@@ -21,7 +21,7 @@ import android.view.MenuItem;
 
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
-import androidx.preference.PreferenceFragment;
+import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SwitchPreference;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
 
 import org.lineageos.settings.R;
 
-public class AppOptimizationSettings extends PreferenceFragment implements
+public class AppOptimizationSettings extends PreferenceFragmentCompat implements
         AppOptimizationUtils.ProgressListener {
 
     private static final String KEY_HEADER = "app_opt_header";
